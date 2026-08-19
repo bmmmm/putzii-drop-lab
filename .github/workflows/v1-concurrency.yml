@@ -1,0 +1,20 @@
+# V1 probe: does a concurrency group (no cancel-in-progress) cancel PENDING
+# runs beyond the single waiting slot? Dispatch 4x fast, watch conclusions.
+name: v1-apply-sim
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: run tag
+        required: true
+        type: string
+concurrency:
+  group: v1-serial
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    steps:
+      - name: simulate long apply
+        run: |
+          echo "tag=${{ inputs.tag }}"
+          sleep 45

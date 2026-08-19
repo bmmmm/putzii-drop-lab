@@ -1,0 +1,14 @@
+# V4 probe (part 2): does workflow_run fire reliably and how fast?
+name: v4-follower
+on:
+  workflow_run:
+    workflows: ["v4-apply"]
+    types: [completed]
+jobs:
+  deploy-sim:
+    runs-on: ubuntu-latest
+    steps:
+      - name: report trigger
+        run: |
+          echo "follower_for_run=${{ github.event.workflow_run.id }}"
+          echo "apply_conclusion=${{ github.event.workflow_run.conclusion }}"

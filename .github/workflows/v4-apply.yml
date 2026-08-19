@@ -1,0 +1,17 @@
+# V4 probe (part 1): the "apply" workflow that a workflow_run follower chains on.
+name: v4-apply
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: run tag
+        required: true
+        type: string
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: simulate commit work
+        run: |
+          echo "apply tag=${{ inputs.tag }}"
+          sleep 3

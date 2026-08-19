@@ -1,0 +1,28 @@
+# V3 probe: measure the real workflow_dispatch input size cliff.
+# Client dispatches payloads of increasing size; job reports byte count +
+# sha256 so we can prove lossless arrival (not just acceptance).
+name: v3-inputsize
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: big payload
+        required: false
+        type: string
+        default: ""
+      tag:
+        description: run tag
+        required: false
+        type: string
+        default: ""
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: report size and hash
+        env:
+          PAYLOAD: ${{ inputs.payload }}
+        run: |
+          echo "tag=${{ inputs.tag }}"
+          echo "bytes=$(printf '%s' "$PAYLOAD" | wc -c | tr -d ' ')"
+          echo "sha256=$(printf '%s' "$PAYLOAD" | sha256sum | cut -d' ' -f1)"
