@@ -1,0 +1,87 @@
+# The mutation path. NO concurrency group here — a group cancels pending runs
+# (one waiting slot, lab-verified) and would LOSE dispatches. Serialization is
+# the in-job retry loop: fetch-reset-remerge-push, safe because mergePlans is
+# commutative and idempotent.
+name: apply
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: envelope | checkin
+        required: true
+        type: string
+      planId:
+        required: true
+        type: string
+      personId:
+        required: true
+        type: string
+      token:
+        required: true
+        type: string
+      nonce:
+        description: replay key, client re-finds it in the health tail
+        required: true
+        type: string
+      payload:
+        description: envelope = b64url(gzip(wire)), checkin = areaId
+        required: false
+        type: string
+        default: ""
+      clientRev:
+        required: false
+        type: string
+        default: "0"
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    env:
+      # isoWeekKey/dayNumber are LOCAL-time; the household lives in Berlin.
+      # A Sun-23:30-CEST check-in on a UTC runner lands in the wrong ISO week
+      # (lab-verified divergence) — never remove this pin.
+      TZ: Europe/Berlin
+      DROP_MODE: ${{ inputs.mode }}
+      DROP_PLAN_ID: ${{ inputs.planId }}
+      DROP_PERSON_ID: ${{ inputs.personId }}
+      DROP_TOKEN: ${{ inputs.token }}
+      DROP_NONCE: ${{ inputs.nonce }}
+      DROP_PAYLOAD: ${{ inputs.payload }}
+      DROP_CLIENT_REV: ${{ inputs.clientRev }}
+      DROP_KEY_B64: ${{ secrets.DROP_KEY_B64 }}
+      DROP_TOKENS_SHA256: ${{ secrets.DROP_TOKENS_SHA256 }}
+      SITE_DIR: site
+      PUTZII_DIR: putzii-app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: bmmmm/putzii
+          ref: ${{ vars.PUTZII_REF }}
+          path: putzii-app
+      - name: apply with retry
+        run: |
+          git config user.name "putzii-drop[bot]"
+          git config user.email "putzii-drop[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5 6 7 8; do
+            git fetch --quiet origin main
+            git reset --hard --quiet origin/main
+            set +e
+            node runner/apply.mjs
+            rc=$?
+            set -e
+            if [ "$rc" = "2" ]; then echo "fatal (auth/validation) — no retry"; exit 1; fi
+            if [ "$rc" = "3" ]; then echo "no-op (replay) — nothing to commit"; exit 0; fi
+            if [ "$rc" != "0" ]; then echo "unexpected rc=$rc"; exit 1; fi
+            git add site
+            git commit --quiet -m "apply: run ${GITHUB_RUN_ID} attempt ${attempt}"
+            if git push --quiet origin main; then
+              echo "pushed on attempt ${attempt}"
+              exit 0
+            fi
+            echo "push raced, remerging (attempt ${attempt})"
+            sleep $(( (RANDOM % 4) + attempt ))
+          done
+          echo "exhausted retries"
+          exit 1
