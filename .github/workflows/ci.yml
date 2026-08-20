@@ -1,0 +1,29 @@
+name: ci
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["site/**"] # apply commits only touch site/
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Europe/Berlin
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: bmmmm/putzii
+          ref: ${{ vars.PUTZII_REF }}
+          path: putzii-app
+      - run: node runner/test.mjs putzii-app
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      # three-way parity: Node vectors -> Go tests -> Go vectors -> Node check
+      - run: node runner/genvectors.mjs internal/dropcrypto/testdata/vectors.json
+      - run: node runner/gengolden.mjs internal/wire/testdata/golden.json putzii-app
+      - run: go test ./...
+      - run: node runner/checkvectors.mjs internal/dropcrypto/testdata/govectors.json
