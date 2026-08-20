@@ -1,0 +1,20 @@
+# Daily gate that CAN go red: full runner suite incl. the TZ pin check and
+# the no-plaintext-in-log gates, against the PINNED putzii ref.
+name: selfcheck
+on:
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      TZ: Europe/Berlin
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: bmmmm/putzii
+          ref: ${{ vars.PUTZII_REF }}
+          path: putzii-app
+      - run: node runner/test.mjs putzii-app
