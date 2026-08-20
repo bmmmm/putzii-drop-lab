@@ -1,6 +1,24 @@
 {
- "rev": 1,
- "at": "2026-08-20T00:10:56.055Z",
- "lastRunId": "direct",
- "tail": []
+ "rev": 2,
+ "at": "2026-08-20T00:11:13.499Z",
+ "lastRunId": "32316308254",
+ "tail": [
+  {
+   "at": "2026-08-20T00:11:13.499Z",
+   "by": "x7a5q",
+   "nonce": "ffxhsk8f",
+   "run": "32316308254",
+   "rev": 2,
+   "counts": {
+    "newEvents": 0,
+    "newAreas": 0,
+    "changedAreas": 0,
+    "newPeople": 1,
+    "changedPeople": 0,
+    "newWeeks": 0,
+    "changedWeeks": 0,
+    "minted": 0
+   }
+  }
+ ]
 }
