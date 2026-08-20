@@ -1,0 +1,14 @@
+# second checkout used by workflows / local test runs
+putzii-app/
+
+# dropii CLI: real config holds key + PAT — NEVER commit it
+dropii.conf
+dropii
+
+# local build artifacts
+*.test
+dist/
+
+# generated parity fixtures (CI regenerates them)
+internal/dropcrypto/testdata/
+internal/wire/testdata/
