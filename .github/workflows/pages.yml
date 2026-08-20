@@ -1,0 +1,37 @@
+# Deploy path. Superseding is CORRECT here (newest main contains everything),
+# so cancel-in-progress is on. Triggers: after every apply (GITHUB_TOKEN
+# pushes do not fire push workflows — workflow_run does), direct site/**
+# pushes (dropii plan init), a 15-min floor, and manual.
+name: pages
+on:
+  workflow_run:
+    workflows: ["apply"]
+    types: [completed]
+  push:
+    branches: [main]
+    paths: ["site/**"]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main # always the newest state, never the workflow_run SHA
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5
